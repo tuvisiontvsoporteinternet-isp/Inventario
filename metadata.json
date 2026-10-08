@@ -1,0 +1,6 @@
+{
+  "name": "NetStock ISP - Gestión de Inventario y Despachos",
+  "description": "Sistema profesional de inventario para redes ISP y FTTH. Control de stock (NAPs, Mangas, ONUs, conectores UPC/APC), entregas a técnicos, clientes asignados, órdenes y reportes PDF automáticos.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
