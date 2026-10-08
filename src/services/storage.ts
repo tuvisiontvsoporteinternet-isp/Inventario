@@ -1,4 +1,13 @@
-import { EquipmentItem, Customer, Technician, DispatchOrder, DailyClosing } from '../types/inventory';
+import {
+  EquipmentItem,
+  Customer,
+  Technician,
+  DispatchOrder,
+  DailyClosing,
+  InvoiceDataExtracted,
+  InvoicePurchaseRecord,
+  DispatchItem,
+} from '../types/inventory';
 import { INITIAL_EQUIPMENT, INITIAL_CUSTOMERS, INITIAL_TECHNICIANS, INITIAL_ORDERS } from '../data/initialData';
 
 const KEYS = {
@@ -8,6 +17,7 @@ const KEYS = {
   ORDERS: 'netstock_isp_orders_v1',
   COMPANY: 'netstock_isp_company_v1',
   CLOSINGS: 'netstock_isp_closings_v1',
+  INVOICES: 'netstock_isp_invoices_v1',
 };
 
 export interface CompanyInfo {

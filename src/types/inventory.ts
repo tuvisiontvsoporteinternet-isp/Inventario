@@ -119,3 +119,60 @@ export interface DailyClosing {
   notes?: string;
 }
 
+export interface InvoiceItemExtracted {
+  id: string; // temporary row id
+  name: string;
+  category: EquipmentCategory;
+  brand: string;
+  model: string;
+  quantity: number;
+  unit: 'unidades' | 'metros' | 'cajas' | 'piezas' | 'bobinas';
+  unitPrice: number;
+  totalPrice?: number;
+  serials: string[]; // Serial numbers or MAC addresses identified
+  location?: string;
+  matchedEquipmentId?: string; // If matched to existing item in equipment catalog
+  isNewProduct?: boolean; // Whether to create a new item in catalog or update existing
+  selected: boolean; // Whether user checks this item to be imported
+}
+
+export interface InvoiceDataExtracted {
+  invoiceNumber: string;
+  supplierName: string;
+  supplierTaxId?: string;
+  invoiceDate: string;
+  currency: string;
+  subtotal?: number;
+  tax?: number;
+  totalAmount?: number;
+  notes?: string;
+  items: InvoiceItemExtracted[];
+  rawTextPreview?: string;
+}
+
+export interface InvoicePurchaseRecord {
+  id: string;
+  invoiceNumber: string;
+  supplierName: string;
+  supplierTaxId?: string;
+  invoiceDate: string;
+  currency: string;
+  totalAmount: number;
+  itemsCount: number;
+  totalUnits: number;
+  orderId?: string;
+  registeredBy: string;
+  registeredAt: string;
+  items: Array<{
+    equipmentName: string;
+    brand: string;
+    model: string;
+    category: EquipmentCategory;
+    quantity: number;
+    unit: string;
+    unitPrice: number;
+    serials?: string[];
+  }>;
+  notes?: string;
+}
+
