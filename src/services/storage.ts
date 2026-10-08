@@ -45,7 +45,7 @@ export const StorageService = {
   getEquipment(): EquipmentItem[] {
     try {
       const data = localStorage.getItem(KEYS.EQUIPMENT);
-      return data ? JSON.parse(data) : INITIAL_EQUIPMENT;
+      return data !== null ? JSON.parse(data) : INITIAL_EQUIPMENT;
     } catch {
       return INITIAL_EQUIPMENT;
     }
@@ -58,7 +58,7 @@ export const StorageService = {
   getCustomers(): Customer[] {
     try {
       const data = localStorage.getItem(KEYS.CUSTOMERS);
-      return data ? JSON.parse(data) : INITIAL_CUSTOMERS;
+      return data !== null ? JSON.parse(data) : INITIAL_CUSTOMERS;
     } catch {
       return INITIAL_CUSTOMERS;
     }
@@ -71,7 +71,7 @@ export const StorageService = {
   getTechnicians(): Technician[] {
     try {
       const data = localStorage.getItem(KEYS.TECHNICIANS);
-      return data ? JSON.parse(data) : INITIAL_TECHNICIANS;
+      return data !== null ? JSON.parse(data) : INITIAL_TECHNICIANS;
     } catch {
       return INITIAL_TECHNICIANS;
     }
@@ -84,7 +84,7 @@ export const StorageService = {
   getOrders(): DispatchOrder[] {
     try {
       const data = localStorage.getItem(KEYS.ORDERS);
-      return data ? JSON.parse(data) : INITIAL_ORDERS;
+      return data !== null ? JSON.parse(data) : INITIAL_ORDERS;
     } catch {
       return INITIAL_ORDERS;
     }
@@ -191,7 +191,7 @@ export const StorageService = {
   getDailyClosings(): DailyClosing[] {
     try {
       const data = localStorage.getItem(KEYS.CLOSINGS);
-      return data ? JSON.parse(data) : [];
+      return data !== null ? JSON.parse(data) : [];
     } catch {
       return [];
     }
@@ -205,6 +205,90 @@ export const StorageService = {
     const list = this.getDailyClosings();
     list.unshift(closing);
     this.saveDailyClosings(list);
+  },
+
+  getRecordStats(): {
+    ordersCount: number;
+    equipmentCount: number;
+    totalStockUnits: number;
+    customersCount: number;
+    techniciansCount: number;
+    closingsCount: number;
+  } {
+    const orders = this.getOrders();
+    const equipment = this.getEquipment();
+    const customers = this.getCustomers();
+    const technicians = this.getTechnicians();
+    const closings = this.getDailyClosings();
+
+    return {
+      ordersCount: orders.length,
+      equipmentCount: equipment.length,
+      totalStockUnits: equipment.reduce((sum, item) => sum + (item.stock || 0), 0),
+      customersCount: customers.length,
+      techniciansCount: technicians.length,
+      closingsCount: closings.length,
+    };
+  },
+
+  /**
+   * Restablecer desde cero todos los registros o partes seleccionadas
+   */
+  resetRecords(options: {
+    mode: 'all_zero' | 'stock_zero' | 'orders_only';
+    resetCustomers?: boolean;
+    resetTechnicians?: boolean;
+  }): { success: boolean; message: string } {
+    try {
+      // 1. Despachos y cierres siempre se restablecen a 0
+      this.saveOrders([]);
+      this.saveDailyClosings([]);
+
+      if (options.mode === 'all_zero') {
+        // Vaciar completamente catálogo de equipos (0 equipos)
+        this.saveEquipment([]);
+        if (options.resetCustomers !== false) {
+          this.saveCustomers([]);
+        }
+        if (options.resetTechnicians !== false) {
+          this.saveTechnicians([]);
+        }
+        return {
+          success: true,
+          message: 'Todos los registros (despachos, inventario, cierres, clientes y técnicos) han sido restablecidos a cero.',
+        };
+      } else if (options.mode === 'stock_zero') {
+        // Mantener catálogo pero con stock en 0 y series vacías
+        const equipment = this.getEquipment();
+        const zeroStockEquipment = equipment.map((eq) => ({
+          ...eq,
+          stock: 0,
+          serialsAvailable: [],
+          updatedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+        }));
+        this.saveEquipment(zeroStockEquipment);
+
+        if (options.resetCustomers) this.saveCustomers([]);
+        if (options.resetTechnicians) this.saveTechnicians([]);
+
+        return {
+          success: true,
+          message: 'Despachos y cierres reiniciados a cero. Catálogo de equipos conservado con stock en 0 unidades.',
+        };
+      } else {
+        // Solo historial de despachos y cierres
+        if (options.resetCustomers) this.saveCustomers([]);
+        if (options.resetTechnicians) this.saveTechnicians([]);
+
+        return {
+          success: true,
+          message: 'Historial de despachos y cierres diarios restablecido a cero. Inventario y stock conservados.',
+        };
+      }
+    } catch (e: any) {
+      console.error('Error al restablecer registros:', e);
+      return { success: false, message: e.message || 'Error al restablecer los registros.' };
+    }
   },
 
   exportDatabase(): string {

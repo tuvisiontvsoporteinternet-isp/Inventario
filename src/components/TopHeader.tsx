@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Menu,
   Moon,
@@ -7,8 +7,19 @@ import {
   CheckCircle2,
   Bell,
   X,
+  User,
+  LogIn,
+  UserPlus,
+  LogOut,
+  Users,
+  ChevronDown,
+  Shield,
+  FileSpreadsheet,
+  RotateCcw,
 } from 'lucide-react';
 import { NavTab } from './Navbar';
+import { AuthUser, ROLE_LABELS } from '../types/auth';
+import { isGoogleConnected } from '../services/googleAuth';
 
 interface TopHeaderProps {
   activeTab: NavTab;
@@ -21,6 +32,11 @@ interface TopHeaderProps {
   onCloseToast?: () => void;
   companyName?: string;
   onOpenDailyClosing?: () => void;
+  onOpenGoogleSheets?: () => void;
+  onOpenResetModal?: () => void;
+  currentUser?: AuthUser | null;
+  onOpenAuth?: (mode?: 'login' | 'register' | 'users') => void;
+  onLogout?: () => void;
 }
 
 export const TopHeader: React.FC<TopHeaderProps> = ({
@@ -34,14 +50,36 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   onCloseToast,
   companyName = 'TuVisión',
   onOpenDailyClosing,
+  onOpenGoogleSheets,
+  onOpenResetModal,
+  currentUser,
+  onOpenAuth,
+  onLogout,
 }) => {
-  // Get initials for avatar
-  const initials = companyName
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0].toUpperCase())
-    .join('') || 'ISP';
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Initials for avatar
+  const userInitials = currentUser?.name
+    ? currentUser.name
+        .split(' ')
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((w) => w[0].toUpperCase())
+        .join('')
+    : 'U';
+
+  const roleConfig = currentUser?.role ? ROLE_LABELS[currentUser.role] : null;
 
   return (
     <header className="sticky top-0 z-30 w-full bg-white dark:bg-slate-900 border-b border-slate-200/90 dark:border-slate-800 transition-colors">
@@ -64,7 +102,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
               <span className="w-1.5 h-6 bg-purple-600 rounded-full transform -skew-x-12"></span>
               <span className="w-1.5 h-6 bg-indigo-500 rounded-full transform -skew-x-12"></span>
             </div>
-            <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight truncate max-w-[180px] sm:max-w-[280px]">
+            <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight truncate max-w-[160px] sm:max-w-[280px]">
               {companyName}
             </span>
             <span className="text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded-md bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300 shrink-0">
@@ -87,8 +125,34 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           </div>
         </div>
 
-        {/* Right Controls: Cierre Diario, Theme Toggle & Avatar */}
+        {/* Right Controls: Cierre Diario, Theme Toggle & User Auth */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          {/* Google Sheets Sync Button */}
+          {onOpenGoogleSheets && (
+            <button
+              onClick={onOpenGoogleSheets}
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-bold rounded-xl transition shadow-2xs border ${
+                isGoogleConnected()
+                  ? 'text-emerald-700 dark:text-emerald-300 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/70 dark:hover:bg-emerald-900 border-emerald-300 dark:border-emerald-700'
+                  : 'text-slate-700 dark:text-slate-300 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 border-slate-200 dark:border-slate-700'
+              }`}
+              title={
+                isGoogleConnected()
+                  ? 'Google Sheets Conectado • Sincronización activa'
+                  : 'Conectar y Sincronizar con Google Sheets'
+              }
+            >
+              {isGoogleConnected() && (
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+              )}
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span className="hidden md:inline">
+                {isGoogleConnected() ? 'Sheets Conectado' : 'Google Sheets'}
+              </span>
+              <span className="md:hidden">Sheets</span>
+            </button>
+          )}
+
           {/* Cierre Diario Button */}
           {onOpenDailyClosing && (
             <button
@@ -105,7 +169,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           {/* Light / Dark Mode Toggle */}
           <button
             onClick={toggleTheme}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
             title={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
           >
             {isDark ? (
@@ -121,12 +185,122 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             )}
           </button>
 
-          {/* User Avatar Circle */}
-          <div
-            className="w-9 h-9 rounded-full bg-cyan-100 dark:bg-cyan-950/80 border border-cyan-300 dark:border-cyan-800 flex items-center justify-center text-cyan-700 dark:text-cyan-300 font-bold text-xs select-none shadow-xs"
-            title={companyName}
-          >
-            {initials}
+          {/* User Auth Profile Dropdown */}
+          <div className="relative" ref={userMenuRef}>
+            {currentUser ? (
+              <button
+                type="button"
+                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                className="flex items-center gap-2 p-1 sm:px-2.5 sm:py-1 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
+              >
+                <div
+                  className={`w-8 h-8 rounded-full ${
+                    currentUser.avatarColor || 'bg-purple-600'
+                  } text-white font-bold text-xs flex items-center justify-center shadow-xs shrink-0`}
+                >
+                  {userInitials}
+                </div>
+                <div className="hidden lg:flex flex-col text-left">
+                  <span className="text-xs font-bold text-slate-900 dark:text-white truncate max-w-[110px]">
+                    {currentUser.name}
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-medium truncate max-w-[110px]">
+                    {roleConfig?.label || 'Usuario'}
+                  </span>
+                </div>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden sm:block" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onOpenAuth?.('login')}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 rounded-xl shadow-xs transition"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>Ingresar</span>
+              </button>
+            )}
+
+            {/* Dropdown Menu */}
+            {isUserMenuOpen && currentUser && (
+              <div className="absolute right-0 mt-2 w-56 p-1.5 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 z-50 text-xs animate-in fade-in zoom-in-95">
+                <div className="p-2 border-b border-slate-100 dark:border-slate-800 mb-1">
+                  <p className="font-bold text-slate-900 dark:text-white truncate">{currentUser.name}</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">{currentUser.email}</p>
+                  <span
+                    className={`inline-block px-2 py-0.5 text-[9px] font-bold rounded-md mt-1.5 ${
+                      roleConfig?.bg || 'bg-purple-100 text-purple-700'
+                    }`}
+                  >
+                    {roleConfig?.label || 'Usuario'}
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsUserMenuOpen(false);
+                    onOpenAuth?.('register');
+                  }}
+                  className="w-full flex items-center gap-2 px-2.5 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/80 rounded-xl transition font-medium"
+                >
+                  <UserPlus className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                  <span>+ Crear Nuevo Usuario</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsUserMenuOpen(false);
+                    onOpenAuth?.('users');
+                  }}
+                  className="w-full flex items-center gap-2 px-2.5 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/80 rounded-xl transition font-medium"
+                >
+                  <Users className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                  <span>Directorio de Usuarios</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsUserMenuOpen(false);
+                    onOpenAuth?.('login');
+                  }}
+                  className="w-full flex items-center gap-2 px-2.5 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/80 rounded-xl transition font-medium"
+                >
+                  <LogIn className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                  <span>Cambiar de Usuario</span>
+                </button>
+
+                {onOpenResetModal && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsUserMenuOpen(false);
+                      onOpenResetModal();
+                    }}
+                    className="w-full flex items-center gap-2 px-2.5 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl transition font-medium"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5 text-red-500" />
+                    <span>Restablecer Registros a Cero</span>
+                  </button>
+                )}
+
+                <div className="border-t border-slate-100 dark:border-slate-800 mt-1 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsUserMenuOpen(false);
+                      onLogout?.();
+                    }}
+                    className="w-full flex items-center gap-2 px-2.5 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl transition font-medium"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>Cerrar Sesión</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

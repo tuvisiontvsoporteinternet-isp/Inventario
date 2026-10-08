@@ -9,7 +9,13 @@ import { CustomersView } from './components/CustomersView';
 import { TechniciansView } from './components/TechniciansView';
 import { ReportsView } from './components/ReportsView';
 import { DailyClosingModal } from './components/DailyClosingModal';
+import { AuthModal } from './components/AuthModal';
+import { LoginScreen } from './components/LoginScreen';
+import { GoogleSheetsModal } from './components/GoogleSheetsModal';
+import { ResetDatabaseModal } from './components/ResetDatabaseModal';
 import { StorageService, CompanyInfo } from './services/storage';
+import { AuthService } from './services/auth';
+import { AuthUser } from './types/auth';
 import { EquipmentItem, Customer, Technician, DispatchOrder, MovementType } from './types/inventory';
 
 export default function App() {
@@ -43,6 +49,31 @@ export default function App() {
     StorageService.getCompanyInfo()
   );
 
+  // User Authentication State (Crear usuario, iniciar sesión con correo y contraseña)
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(() =>
+    AuthService.getCurrentUser()
+  );
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'register' | 'users'>('login');
+
+  const handleOpenAuth = (mode: 'login' | 'register' | 'users' = 'login') => {
+    setAuthModalMode(mode);
+    setIsAuthModalOpen(true);
+  };
+
+  const handleLogout = () => {
+    AuthService.logout();
+    setCurrentUser(null);
+    showToast('Sesión cerrada correctamente.');
+  };
+
+  const handleUserChanged = (user: AuthUser | null) => {
+    setCurrentUser(user);
+    if (user) {
+      showToast(`Sesión activa: ${user.name} (${user.email}).`);
+    }
+  };
+
   // App Navigation (Left Lateral Sidebar)
   const [activeTab, setActiveTab] = useState<NavTab>('inventory');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -51,6 +82,12 @@ export default function App() {
 
   // Daily Closing Modal state
   const [isDailyClosingModalOpen, setIsDailyClosingModalOpen] = useState(false);
+
+  // Google Sheets Sync Modal state
+  const [isGoogleSheetsModalOpen, setIsGoogleSheetsModalOpen] = useState(false);
+
+  // Reset Records / Database to Zero Modal state
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
 
   // Core Data State
   const [equipment, setEquipment] = useState<EquipmentItem[]>([]);
@@ -196,6 +233,21 @@ export default function App() {
     setActiveTab('dispatches');
   };
 
+  // Security Gate: La página NO se muestra hasta que se coloque el usuario y contraseña
+  if (!currentUser) {
+    return (
+      <LoginScreen
+        companyInfo={companyInfo}
+        onLoginSuccess={(user) => {
+          setCurrentUser(user);
+          showToast(`¡Bienvenido al sistema, ${user.name}!`);
+        }}
+        isDark={isDark}
+        toggleTheme={toggleTheme}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#f8fafc] dark:bg-[#0b0f19] text-slate-900 dark:text-slate-100 font-sans transition-colors flex">
       {/* Lateral Left Sidebar (Fina Partner Style with Dynamic Company Name) */}
@@ -218,6 +270,11 @@ export default function App() {
           showToast(`Nombre actualizado a "${c.name}".`);
         }}
         onOpenDailyClosing={() => setIsDailyClosingModalOpen(true)}
+        onOpenGoogleSheets={() => setIsGoogleSheetsModalOpen(true)}
+        onOpenResetModal={() => setIsResetModalOpen(true)}
+        currentUser={currentUser}
+        onOpenAuth={handleOpenAuth}
+        onLogout={handleLogout}
       />
 
       {/* Main Content Layout with Left Offset on Desktop (w-64) */}
@@ -234,6 +291,11 @@ export default function App() {
           onCloseToast={() => setToastMessage(null)}
           companyName={companyInfo.name}
           onOpenDailyClosing={() => setIsDailyClosingModalOpen(true)}
+          onOpenGoogleSheets={() => setIsGoogleSheetsModalOpen(true)}
+          onOpenResetModal={() => setIsResetModalOpen(true)}
+          currentUser={currentUser}
+          onOpenAuth={handleOpenAuth}
+          onLogout={handleLogout}
         />
 
         {/* Dynamic View Body */}
@@ -318,6 +380,37 @@ export default function App() {
         companyInfo={companyInfo}
         onClosingSuccess={(closing) => {
           showToast(`Cierre N° ${closing.closingNumber} ejecutado y PDF descargado.`);
+        }}
+      />
+
+      {/* User Authentication & Creation Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        currentUser={currentUser}
+        onUserChanged={handleUserChanged}
+        companyName={companyInfo.name}
+        initialMode={authModalMode}
+      />
+
+      {/* Google Sheets Sync & Backup Modal */}
+      <GoogleSheetsModal
+        isOpen={isGoogleSheetsModalOpen}
+        onClose={() => setIsGoogleSheetsModalOpen(false)}
+        companyInfo={companyInfo}
+        onDataSyncSuccess={() => {
+          loadAllData();
+          showToast('Sincronización con Google Sheets completada.');
+        }}
+      />
+
+      {/* Reset Database / Records to Zero Modal */}
+      <ResetDatabaseModal
+        isOpen={isResetModalOpen}
+        onClose={() => setIsResetModalOpen(false)}
+        onResetSuccess={(msg) => {
+          loadAllData();
+          showToast(msg);
         }}
       />
     </div>

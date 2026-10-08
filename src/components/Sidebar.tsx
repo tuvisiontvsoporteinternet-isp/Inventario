@@ -18,9 +18,15 @@ import {
   RotateCcw,
   X,
   Sparkles,
+  Shield,
+  LogIn,
+  LogOut,
+  UserCheck,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { StorageService, CompanyInfo } from '../services/storage';
 import { NavTab } from './Navbar';
+import { AuthUser, ROLE_LABELS } from '../types/auth';
 
 interface SidebarProps {
   activeTab: NavTab;
@@ -35,6 +41,11 @@ interface SidebarProps {
   companyInfo: CompanyInfo;
   setCompanyInfo: (company: CompanyInfo) => void;
   onOpenDailyClosing: () => void;
+  onOpenGoogleSheets?: () => void;
+  onOpenResetModal?: () => void;
+  currentUser?: AuthUser | null;
+  onOpenAuth?: (mode?: 'login' | 'register' | 'users') => void;
+  onLogout?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -50,6 +61,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
   companyInfo,
   setCompanyInfo,
   onOpenDailyClosing,
+  onOpenGoogleSheets,
+  onOpenResetModal,
+  currentUser,
+  onOpenAuth,
+  onLogout,
 }) => {
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
@@ -331,6 +347,40 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
               </button>
 
+              {/* Gestión de Usuarios Link */}
+              <button
+                onClick={() => {
+                  onOpenAuth?.('users');
+                  setIsOpenMobile(false);
+                }}
+                className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition"
+              >
+                <div className="flex items-center gap-3">
+                  <Shield className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  <span>Usuarios & Personal</span>
+                </div>
+                <span className="text-[10px] font-bold text-purple-600 dark:text-purple-400 px-1.5 py-0.2 rounded-md bg-purple-50 dark:bg-purple-950/60">
+                  {currentUser?.role === 'admin' ? '👑 Admin (Eliminar)' : 'Ver Perfiles'}
+                </span>
+              </button>
+
+              {/* Sincronización Google Sheets Link */}
+              <button
+                onClick={() => {
+                  onOpenGoogleSheets?.();
+                  setIsOpenMobile(false);
+                }}
+                className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition"
+              >
+                <div className="flex items-center gap-3">
+                  <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span>Google Sheets Sync</span>
+                </div>
+                <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200 dark:border-emerald-800">
+                  Sheets API
+                </span>
+              </button>
+
               <button
                 onClick={() => setShowHelpModal(true)}
                 className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition"
@@ -339,6 +389,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <HelpCircle className="w-4 h-4 text-slate-400" />
                   <span>Centro de ayuda FTTH</span>
                 </div>
+              </button>
+
+              {/* Restablecer Registros desde Cero Link */}
+              <button
+                onClick={() => {
+                  onOpenResetModal?.();
+                  setIsOpenMobile(false);
+                }}
+                className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition group"
+              >
+                <div className="flex items-center gap-3">
+                  <RotateCcw className="w-4 h-4 text-red-500 group-hover:rotate-180 transition-transform duration-500" />
+                  <span>Restablecer Registros</span>
+                </div>
+                <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-md bg-red-100 dark:bg-red-950/80 text-red-600 dark:text-red-300">
+                  A Cero
+                </span>
               </button>
             </nav>
           </div>
@@ -369,12 +436,88 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        {/* Footer: "Registrado como: Daniela Urbina / TuVisión Soporte" */}
-        <div className="p-4 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/50">
-          <p className="text-[11px] text-slate-400">Registrado como:</p>
-          <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
-            {companyInfo.name || 'TuVisión Telecomunicaciones'}
-          </p>
+        {/* Footer: User profile and company details */}
+        <div className="p-3.5 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-900/60 space-y-2">
+          {currentUser ? (
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
+                  Sesión Activa:
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onOpenAuth?.('users');
+                    setIsOpenMobile(false);
+                  }}
+                  className="text-[10px] font-bold text-purple-600 dark:text-purple-400 hover:underline"
+                >
+                  Cambiar
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2 p-1.5 bg-white dark:bg-slate-800 rounded-xl border border-slate-200/60 dark:border-slate-700/60 shadow-2xs">
+                <div
+                  className={`w-7 h-7 rounded-full ${
+                    currentUser.avatarColor || 'bg-purple-600'
+                  } text-white font-bold text-[10px] flex items-center justify-center shrink-0`}
+                >
+                  {currentUser.name.substring(0, 2).toUpperCase()}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                    {currentUser.name}
+                  </p>
+                  <p className="text-[10px] text-purple-600 dark:text-purple-400 font-semibold truncate">
+                    {ROLE_LABELS[currentUser.role]?.label || 'Usuario'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-0.5 text-[11px]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onOpenAuth?.('register');
+                    setIsOpenMobile(false);
+                  }}
+                  className="text-purple-600 dark:text-purple-400 hover:underline font-semibold flex items-center gap-1"
+                >
+                  <span>+ Crear Usuario</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onLogout?.()}
+                  className="text-slate-400 hover:text-red-500 font-medium flex items-center gap-0.5"
+                  title="Cerrar sesión"
+                >
+                  <LogOut className="w-3 h-3" />
+                  <span>Salir</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-1">
+              <button
+                type="button"
+                onClick={() => {
+                  onOpenAuth?.('login');
+                  setIsOpenMobile(false);
+                }}
+                className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 rounded-xl shadow-xs transition"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>Iniciar Sesión / Registro</span>
+              </button>
+            </div>
+          )}
+
+          <div className="pt-1 border-t border-slate-200/50 dark:border-slate-800 text-[10px] text-slate-400 truncate">
+            <span>ISP: </span>
+            <span className="font-semibold text-slate-700 dark:text-slate-300">
+              {companyInfo.name || 'TuVisión'}
+            </span>
+          </div>
         </div>
       </aside>
 
@@ -552,13 +695,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </label>
               </div>
 
-              <button
-                onClick={handleResetDemo}
-                className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold text-red-600 dark:text-red-400 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-950/70 rounded-xl transition mt-2"
-              >
-                <RotateCcw className="w-4 h-4" />
-                Restablecer a Datos de Demostración
-              </button>
+              <div className="pt-2 space-y-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowConfigModal(false);
+                    onOpenResetModal?.();
+                  }}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-red-600 hover:bg-red-700 active:scale-95 rounded-xl transition shadow-md shadow-red-500/20"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  Restablecer desde Cero Todos los Registros
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleResetDemo}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition"
+                >
+                  Restaurar Datos de Demostración (Demo Inicial)
+                </button>
+              </div>
             </div>
           </div>
         </div>

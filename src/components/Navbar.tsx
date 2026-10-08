@@ -26,6 +26,7 @@ interface NavbarProps {
   toggleTheme: () => void;
   onOpenNewDispatch: () => void;
   onRefreshData: () => void;
+  onOpenResetModal?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -35,6 +36,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   toggleTheme,
   onOpenNewDispatch,
   onRefreshData,
+  onOpenResetModal,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showConfigModal, setShowConfigModal] = useState(false);
@@ -340,13 +342,27 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </label>
               </div>
 
-              <button
-                onClick={handleResetDemo}
-                className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold text-red-600 dark:text-red-400 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-950/70 rounded-xl transition mt-2"
-              >
-                <RotateCcw className="w-4 h-4" />
-                Restablecer a Datos de Demostración
-              </button>
+              <div className="pt-2 space-y-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowConfigModal(false);
+                    onOpenResetModal?.();
+                  }}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-red-600 hover:bg-red-700 active:scale-95 rounded-xl transition shadow-md shadow-red-500/20"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  Restablecer desde Cero Todos los Registros
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleResetDemo}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition"
+                >
+                  Restaurar Datos de Demostración (Demo Inicial)
+                </button>
+              </div>
             </div>
           </div>
         </div>
